@@ -25,12 +25,13 @@ from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 
-ticker_symbol = "AAPL"  # The ticker symbol of the company. US stock only.
+# ticker_symbol = "AAPL"  # The ticker symbol of the company. US stock only.
+ticker_symbol = "WHR"  # The ticker symbol of the company. US stock only.
 sec_api_key = os.environ.get("SEC_API_KEY")  # Your SEC API key, get it from https://sec-api.io/profile for free.
 
 #llm = "gpt-4-turbo-preview"
-#llm = "llama2"
-llm = "openchat"
+llm = "llama2"
+#llm = "openchat"
 
 # embd = OpenAIEmbeddings()
 # create the open-source embedding function
@@ -160,20 +161,20 @@ class ReportAnalysis:
         target_close = fetch_stock_data(self.ticker_symbol)
         sp500_close = fetch_stock_data("^GSPC")
 
-        aapl_change = (target_close - target_close.iloc[0]) / target_close.iloc[0] * 100
+        ticker_change = (target_close - target_close.iloc[0]) / target_close.iloc[0] * 100
         sp500_change = (sp500_close - sp500_close.iloc[0]) / sp500_close.iloc[0] * 100
 
-        start_date = aapl_change.index.min()
+        start_date = ticker_change.index.min()
         four_months = start_date + DateOffset(months=4)
         eight_months = start_date + DateOffset(months=8)
-        end_date = aapl_change.index.max()
+        end_date = ticker_change.index.max()
 
-        plt.rcParams.update({'font.size': 20})  # 调整为更大的字体大小
+        plt.rcParams.update({'font.size': 20})
         plt.figure(figsize=(14, 7))
-        plt.plot(aapl_change.index, aapl_change, label='AAPL Change %', color='blue')
+        plt.plot(ticker_change.index, ticker_change, label=ticker_symbol + ' Change %', color='blue')
         plt.plot(sp500_change.index, sp500_change, label='S&P 500 Change %', color='red')
 
-        plt.title('AAPL vs S&P 500 - Change % Over the Past Year')
+        plt.title(ticker_symbol + ' vs S&P 500 - Change % Over the Past Year')
         plt.xlabel('Date')
         plt.ylabel('Change %')
 
