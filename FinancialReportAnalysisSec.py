@@ -16,22 +16,21 @@ from langchain_community.vectorstores import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain import hub
 from langchain_core.runnables import RunnablePassthrough
-from langchain_openai import OpenAIEmbeddings
 
 from reportlab.lib import colors
 from reportlab.lib import pagesizes
 from reportlab.platypus import SimpleDocTemplate, Frame, Paragraph, Image, PageTemplate, FrameBreak, Spacer, Table, TableStyle, NextPageTemplate, PageBreak
 from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
+from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
 
-# ticker_symbol = "AAPL"  # The ticker symbol of the company. US stock only.
-ticker_symbol = "WHR"  # The ticker symbol of the company. US stock only.
-sec_api_key = os.environ.get("SEC_API_KEY")  # Your SEC API key, get it from https://sec-api.io/profile for free.
+industry = "Computer Hardware Manufacturing, Semiconductors, GPUs"  # setting the industry to improve the prompt
+ticker_symbol = "NVDA"  # The ticker symbol of the company. US stock only.
+sec_api_key = os.environ.get("SEC_API_KEY")  # Your SEC API key, get it from https://sec-api.io/ for free.
 
 #llm = "gpt-4-turbo-preview"
-llm = "llama2"
-#llm = "openchat"
+#llm = "llama2"
+llm = "openchat"
 
 # embd = OpenAIEmbeddings()
 # create the open-source embedding function
@@ -52,20 +51,6 @@ else:
         api_key='ollama',  # required, but unused
     )
 
-
-# "Develop a tailored Financial Analysis Report aligned with the user's individual needs, drawing insights from the
-# supplied reference materials. Initiate interaction with the user to obtain essential specifics and resolve any
-# ambiguities. Iteratively refine the Financial Analysis Report through consistent evaluations using the given
-# evaluationRubric and gather user input to ensure the end product aligns with the users expectations. You MUST
-# FOLLOW the rules in order.","role":"expert level accountant","department":"finance","task":"Create a Financial
-# Analysis Report","task_description":"As an expert level accountant in the finance department, your task is to
-# create a Financial Analysis Report that provides comprehensive insights into the financial performance and health
-# of the company. The report should be accurate, detailed, and well-structured, showcasing key financial metrics,
-# trends, and analysis. The finished work will be used by the management team and stakeholders to make informed
-# decisions, identify areas of improvement, and assess the overall financial position of the company. Core success
-# factors include attention to detail, analytical skills, and the ability to effectively communicate complex
-# financial information. The success of the report will be measured by its ability to provide actionable
-# recommendations and contribute to the improvement of financial decision-making processes."
 
 class ReportAnalysis:
     def __init__(self, ticker_symbol):
@@ -103,8 +88,8 @@ class ReportAnalysis:
             reflected in the report's contribution to informed investment decisions and strategic planning."""
 
         # self.system_prompt_v3 = """
-        self.system_prompt = """
-            Role: Expert Investor in Consumer Electronics
+        self.system_prompt = f"""
+            Role: Expert Investor in {industry}
             Department: Finance
             Primary Responsibility: Generation of Customized Financial Analysis Reports
 
@@ -491,7 +476,7 @@ left_column_width = page_width * 2/3
 right_column_width = page_width - left_column_width
 margin = 4
 
-pdf_path = os.path.join(ra.project_dir, f"{ticker_symbol}_report.pdf")
+pdf_path = os.path.join(ra.project_dir, f"{ticker_symbol}_report_{llm}-v4.pdf")
 doc = SimpleDocTemplate(pdf_path, pagesize=pagesizes.A4)
 
 frame_left = Frame(margin, margin, left_column_width-margin*2, page_height-margin*2, id='left')
