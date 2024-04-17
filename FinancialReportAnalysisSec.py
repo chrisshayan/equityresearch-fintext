@@ -24,7 +24,11 @@ from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
 
-industry = "Computer Hardware Manufacturing, Semiconductors, GPUs"  # setting the industry to improve the prompt
+LANGCHAIN_TRACING_V2=True
+LANGCHAIN_ENDPOINT="https://api.smith.langchain.com"
+LANGCHAIN_API_KEY="..."
+LANGCHAIN_PROJECT="llmops-sample"
+
 ticker_symbol = "NVDA"  # The ticker symbol of the company. US stock only.
 sec_api_key = os.environ.get("SEC_API_KEY")  # Your SEC API key, get it from https://sec-api.io/ for free.
 
@@ -62,34 +66,9 @@ class ReportAnalysis:
         self.extractor = ExtractorApi(sec_api_key)
         self.report_address = self.get_sec_report_address()
 
-        self.system_prompt_v2 = """
-            Role: Expert Investor
-            Department: Finance
-            Primary Responsibility: Generation of Customized Financial Analysis Reports
-
-            Role Description: As an Expert Investor within the finance domain, your expertise is harnessed to develop 
-            bespoke Financial Analysis Reports that cater to specific client requirements. This role demands a deep 
-            dive into financial statements and market data to unearth insights regarding a company's financial 
-            performance and stability. Engaging directly with clients to gather essential information and 
-            continuously refining the report with their feedback ensures the final product precisely meets their 
-            needs and expectations. Generate reports similar quality to Goldman Sachs.
-
-            Key Objectives:
-
-            Analytical Precision: Employ meticulous analytical prowess to interpret financial data, identifying 
-            underlying trends and anomalies. Effective Communication: Simplify and effectively convey complex 
-            financial narratives, making them accessible and actionable to non-specialist audiences. Client Focus: 
-            Dynamically tailor reports in response to client feedback, ensuring the final analysis aligns with their 
-            strategic objectives. Adherence to Excellence: Maintain the highest standards of quality and integrity in 
-            report generation, following established benchmarks for analytical rigor. Performance Indicators: The 
-            efficacy of the Financial Analysis Report is measured by its utility in providing clear, actionable 
-            insights. This encompasses aiding corporate decision-making, pinpointing areas for operational 
-            enhancement, and offering a lucid evaluation of the company's financial health. Success is ultimately 
-            reflected in the report's contribution to informed investment decisions and strategic planning."""
-
         # self.system_prompt_v3 = """
         self.system_prompt = f"""
-            Role: Expert Investor in {industry}
+            Role: Expert Investor in {self.stock.info['industry']}
             Department: Finance
             Primary Responsibility: Generation of Customized Financial Analysis Reports
 
@@ -231,7 +210,12 @@ class ReportAnalysis:
             f"Closing Price ({info['currency']})": "{:.2f}".format(close_price),
             f"Market Cap ({info['currency']}mn)": "{:.2f}".format(info['marketCap'] / 1e6),
             f"52 Week Price Range ({info['currency']})": f"{info['fiftyTwoWeekLow']} - {info['fiftyTwoWeekHigh']}",
-            f"BVPS ({info['currency']})": info['bookValue']
+            f"BVPS ({info['currency']})": info['bookValue'],
+            f"Stock Price Volatility Beta": info['beta'],
+            f"Target Low Price ({info['currency']})": info['targetLowPrice'],
+            f"Target Mean Price ({info['currency']})": info['targetMeanPrice'],
+            f"Target Median Price ({info['currency']})": info['targetMedianPrice'],
+            f"Target High Price ({info['currency']})": info['targetHighPrice'],
         }
         return result
 
@@ -418,18 +402,25 @@ class ReportAnalysis:
                     f"address identified challenges and capitalize on the opportunities to enhance shareholder value "
                     f"in a single paragraph. Less than 150 words.")
 
-        question_v4 = (f"Income statement analysis: {income_stmt_analysis}, \
+        question_woan = (f"Income statement analysis: {income_stmt_analysis}, \
         Balance sheet analysis: {balance_sheet_analysis}, \
-        Cash flow analysis: {cash_flow_analysis}, \ A deep dive into the company's financials for the latest fiscal "
-                    f"year reveals [revenue growth/decline] along with [improvement/deterioration] in cost management "
-                    f"practices, impacting profitability as seen in the income statement. The balance sheet "
-                    f"highlights a [strong/weak] financial structure with [ample/limited] liquidity and ["
-                    f"solid/concerning] solvency. Cash flow analysis confirms the company's [strong/weak] liquidity "
-                    f"position, with [strategic/concerning] investment activities and [sustainable/unsustainable] "
-                    f"financing strategies. Overall, the company's financial health is [sound/concerning] with "
-                    f"strengths in [mention strength] but potential risks in [mention risk]. To capitalize on "
-                    f"opportunities and enhance shareholder value, consider [recommendation 1] and [recommendation 2] "
-                    f"to address [challenges]. ")
+        Cash flow analysis: {cash_flow_analysis}, \ Synthesize the findings from the in-depth analysis of the income "
+                    f"statement, balance sheet, and cash flow for the latest fiscal year. "
+                    f". Discuss company's competitive strategy, to what extend does it align or "
+                       f"differ from its competitors in same segment. Using your assessment of industry KIRs ("
+                       f"Key Industry risks) identify operating cycle (supply, production, demand, and collection)"
+                       f"and specify how they relate to the company. "
+                       f"What are the company competencies and weakness?"
+                       f"How effectively company manage its net working assets? Consider DOH ratios, sales/NWA,"
+                       f"changes in NWCC, and compared to peers in same industry and how the ratios you calculated. "
+                       f"have NCAO and CADA been sufficient to cover maintenance capex? what level of CAPEX do"
+                       f"you anticipate going forward?"
+                    f"You have no limit on how many words you want to generate.")
+
+
+        #woan_answer = self.ask_question(question_woan, 7, use_rag=False)
+        #print("Woan's Answer:")
+        #print(woan_answer)
 
         answer = self.ask_question(question, 7, use_rag=False)
         return {"Income Statement Analysis": income_stmt_analysis, "Balance Sheet Analysis": balance_sheet_analysis,
@@ -526,7 +517,7 @@ subtitle_style = ParagraphStyle(
 )
 
 content = []
-content.append(Paragraph(f"Chris Equity Research Report Using FinGPT: {ra.get_company_info()['Company Name']}", title_style))
+content.append(Paragraph(f"Equity Research Report Using FinGPT: {ra.get_company_info()['Company Name']}", title_style))
 
 content.append(Paragraph("Income Statement Analysis", subtitle_style))
 content.append(Paragraph(answer['Income Statement Analysis'], custom_style))
